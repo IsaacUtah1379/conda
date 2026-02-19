@@ -1068,6 +1068,51 @@ class PowerShellActivator(_Activator):
         return "Remove-Variable CondaModuleArgs"
 
 
+# FIXME
+class ElvishActivator(_Activator):
+    pathsep_join = ":".join
+    sep = "/"
+    path_conversion = staticmethod(win_path_to_unix if on_win else _path_identity)
+    script_extension = ".elv"
+    tempfile_extension = None  # output to stdout
+    command_join = "\n"
+    needs_line_ending_fix = False
+
+    unset_var_tmpl = "unset-env %s"
+    export_var_tmpl = "set-env %s '%s'"
+    path_var_tmpl = export_var_tmpl
+    set_var_tmpl = "var %s='%s'"
+    run_script_tmpl = "eval (slurp < '%s')"
+
+    hook_source_path = Path(
+        CONDA_PACKAGE_ROOT,
+        "shell",
+        "etc",
+        "profile.d",
+        "conda.elv",
+    )
+    inline_hook_source = True
+
+    # FIXME: This will not work due to elvish handling its prompt differently. I will come back and fix this soon.
+    def _update_prompt(self, set_vars, conda_prompt_modifier):
+        ps1 = os.getenv("PS1", "")
+        if "POWERLINE_COMMAND" in ps1:
+            # Defer to powerline (https://github.com/powerline/powerline) if it's in use.
+            return
+        current_prompt_modifier = os.getenv("CONDA_PROMPT_MODIFIER")
+        if current_prompt_modifier:
+            ps1 = re.sub(re.escape(current_prompt_modifier), r"", ps1)
+        # Because we're using single-quotes to set shell variables, we need to handle the
+        # proper escaping of single quotes that are already part of the string.
+        # Best solution appears to be https://stackoverflow.com/a/1250279
+        ps1 = ps1.replace("'", "'\"'\"'")
+        set_vars.update(
+            {
+                "PS1": conda_prompt_modifier + ps1,
+            }
+        )
+
+
 class JSONFormatMixin(_Activator):
     """Returns the necessary values for activation as JSON, so that tools can use them."""
 
