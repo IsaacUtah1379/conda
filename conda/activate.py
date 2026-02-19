@@ -1178,6 +1178,7 @@ activator_map: dict[str, type[_Activator]] = {
     "cmd.exe.run": CmdExeRunActivator,
     "fish": FishActivator,
     "powershell": PowerShellActivator,
+    "elvish": ElvishActivator,
 }
 
 formatter_map = {
