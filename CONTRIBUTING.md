@@ -1,3 +1,12 @@
+[github]: https://github.com/conda/conda
+[github signup]: https://github.com/signup
+[install git]: https://git-scm.com/install
+[development-environment]: https://docs.conda.io/en/latest/contributing.html#development-environment-bash
+[conda cla]: https://docs.conda.io/en/latest/contributing.html#conda-contributor-license-agreement
+[clabot]: https://github.com/conda/cla
+[anaconda-bug-report]: https://anaconda.org/contact/report
+[anaconda-support]: https://anaconda.com/app/support-center
+
 # Contributing to conda
 
 Thank you for your interest in improving conda! Below, we describe how our
@@ -44,8 +53,8 @@ It should be noted that `conda-build` issues need to be filed separately at
 [its issue tracker](https://github.com/conda/conda-build/issues).
 
 For all other types of issues, please head to [Anaconda.org's "Report a Bug" page][anaconda-bug-report].
-For even more information and documentation on everything related to Anaconda, head to the
-[Support Center at Anaconda Nucleus][anaconda-support].
+For even more information and documentation on everything related to Anaconda, head to Anaconda's
+[Support Center][anaconda-support].
 
 Before submitting an issue via any of these channels, make sure to document it
 as well as possible and follow the submission guidelines (this makes everyone's job a lot easier!).
@@ -118,6 +127,7 @@ integrated code. Reviews will focus on:
 - Consistency with project patterns and practices
 
 Reviews will NOT focus on:
+
 - Code formatting (handled by pre-commit hooks)
 - Minor style preferences
 - Test coverage and performance (measured by CI)
