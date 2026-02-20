@@ -36,3 +36,10 @@ fn conda {|@args|
         $E:CONDA_EXE
     }
 }
+
+# Set CONDA_SHLVL and update PATH if necessary
+if (not (has-env CONDA_SHLVL)) {
+    set-env CONDA_SHLVL 0
+    var old_path = (get-env PATH)
+    set-env PATH (path:dir (path:dir $E:CONDA_EXE))'/condabin:'$old_path
+}
