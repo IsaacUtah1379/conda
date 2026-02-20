@@ -1093,25 +1093,6 @@ class ElvishActivator(_Activator):
     )
     inline_hook_source = True
 
-    # FIXME: This will not work due to elvish handling its prompt differently. I will come back and fix this soon.
-    def _update_prompt(self, set_vars, conda_prompt_modifier):
-        ps1 = os.getenv("PS1", "")
-        if "POWERLINE_COMMAND" in ps1:
-            # Defer to powerline (https://github.com/powerline/powerline) if it's in use.
-            return
-        current_prompt_modifier = os.getenv("CONDA_PROMPT_MODIFIER")
-        if current_prompt_modifier:
-            ps1 = re.sub(re.escape(current_prompt_modifier), r"", ps1)
-        # Because we're using single-quotes to set shell variables, we need to handle the
-        # proper escaping of single quotes that are already part of the string.
-        # Best solution appears to be https://stackoverflow.com/a/1250279
-        ps1 = ps1.replace("'", "'\"'\"'")
-        set_vars.update(
-            {
-                "PS1": conda_prompt_modifier + ps1,
-            }
-        )
-
 
 class JSONFormatMixin(_Activator):
     """Returns the necessary values for activation as JSON, so that tools can use them."""
