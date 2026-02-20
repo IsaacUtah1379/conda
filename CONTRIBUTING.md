@@ -1,7 +1,7 @@
 [github]: https://github.com/conda/conda
 [github signup]: https://github.com/signup
 [install git]: https://git-scm.com/install
-[development-environment]: https://docs.conda.io/en/latest/contributing.html#development-environment-bash
+[development-environment]: https://docs.conda.io/projects/conda/en/stable/dev-guide/development-environment.html#
 [conda cla]: https://docs.conda.io/en/latest/contributing.html#conda-contributor-license-agreement
 [clabot]: https://github.com/conda/cla
 [anaconda-bug-report]: https://anaconda.org/contact/report
