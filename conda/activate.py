@@ -1068,7 +1068,6 @@ class PowerShellActivator(_Activator):
         return "Remove-Variable CondaModuleArgs"
 
 
-# FIXME
 class ElvishActivator(_Activator):
     pathsep_join = ":".join
     sep = "/"
