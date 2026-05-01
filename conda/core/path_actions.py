@@ -6,19 +6,20 @@ from __future__ import annotations
 
 import re
 import sys
-from abc import ABCMeta, abstractmethod, abstractproperty
+from abc import ABC, abstractmethod
 from itertools import chain
 from logging import getLogger
 from os.path import basename, dirname, getsize, isdir, isfile, join
 from typing import TYPE_CHECKING
 from uuid import uuid4
 
-from .. import CondaError
+from .. import CONDA_PACKAGE_ROOT, CondaError
 from ..auxlib.ish import dals
-from ..base.constants import CONDA_TEMP_EXTENSION
+from ..base.constants import CONDA_TEMP_EXTENSION, WINDOWS_LAUNCHER_STUB_PATH
 from ..base.context import context
 from ..common.compat import on_win
 from ..common.constants import TRACE
+from ..common.io import dashlist
 from ..common.path import (
     BIN_DIRECTORY,
     get_leaf_directories,
@@ -31,7 +32,6 @@ from ..common.path import (
 )
 from ..common.serialize import json
 from ..common.url import has_platform, path_to_url
-from ..deprecations import deprecated
 from ..exceptions import (
     CondaUpgradeError,
     CondaVerificationError,
@@ -88,7 +88,7 @@ REPR_IGNORE_KWARGS = (
 )
 
 
-class Action:
+class Action(ABC):
     """Base class for path manipulation actions, including linking, unlinking, and others.
 
     Pre and post-transaction plugins should inherit this class to implement their
@@ -101,7 +101,7 @@ class Action:
         4. ``cleanup``
 
 
-    :param transaction_context: Mapping between target prefixes and PrefixActions
+    :param transaction_context: Mapping between target prefixes and PrefixActionGroup
         instances
     :param target_prefix: Target prefix for the action
     :param unlink_precs: Package records to be unlinked
@@ -176,28 +176,21 @@ class Action:
         return "{}({})".format(self.__class__.__name__, ", ".join(args))
 
 
-deprecated.constant(
-    "25.9",
-    "26.3",
-    "_Action",
-    Action,
-    addendum="Use `conda.core.path_actions.Action` instead.",
-)
-
-
-class PathAction(Action, metaclass=ABCMeta):
-    @abstractproperty
+class PathAction(Action):
+    @property
+    @abstractmethod
     def target_full_path(self):
         raise NotImplementedError()
 
 
-class MultiPathAction(Action, metaclass=ABCMeta):
-    @abstractproperty
+class MultiPathAction(Action):
+    @property
+    @abstractmethod
     def target_full_paths(self):
         raise NotImplementedError()
 
 
-class PrefixPathAction(PathAction, metaclass=ABCMeta):
+class PrefixPathAction(PathAction):
     def __init__(self, transaction_context, target_prefix, target_short_path):
         self.transaction_context = transaction_context
         self.target_prefix = target_prefix
@@ -221,7 +214,7 @@ class PrefixPathAction(PathAction, metaclass=ABCMeta):
 # ######################################################
 
 
-class CreateInPrefixPathAction(PrefixPathAction, metaclass=ABCMeta):
+class CreateInPrefixPathAction(PrefixPathAction):
     # All CreatePathAction subclasses must create a SINGLE new path
     #   the short/in-prefix version of that path must be returned by execute()
 
@@ -370,8 +363,13 @@ class LinkPathAction(CreateInPrefixPathAction):
         requested_link_type,
         entry_point_def,
     ):
-        source_directory = context.conda_prefix
-        source_short_path = "Scripts/conda.exe"
+        if context.subdir not in WINDOWS_LAUNCHER_STUB_PATH:
+            raise NotImplementedError(
+                f"Windows entry point stub not available for subdir {context.subdir!r}. "
+                f"Supported: {dashlist(WINDOWS_LAUNCHER_STUB_PATH)}."
+            )
+        source_directory = CONDA_PACKAGE_ROOT
+        source_short_path = WINDOWS_LAUNCHER_STUB_PATH[context.subdir]
         command, _, _ = parse_entry_point_def(entry_point_def)
         target_short_path = f"Scripts/{command}.exe"
         source_path_data = PathDataV1(
@@ -934,7 +932,7 @@ class CreatePrefixRecordAction(CreateInPrefixPathAction):
         package_info,
         target_prefix,
         requested_link_type,
-        requested_spec,
+        requested_spec: MatchSpec | list[MatchSpec],
         all_link_path_actions,
     ):
         extracted_package_dir = package_info.extracted_package_dir
@@ -958,7 +956,7 @@ class CreatePrefixRecordAction(CreateInPrefixPathAction):
         target_prefix,
         target_short_path,
         requested_link_type,
-        requested_spec,
+        requested_spec: MatchSpec | list[MatchSpec],
         all_link_path_actions,
     ):
         super().__init__(
@@ -1020,11 +1018,23 @@ class CreatePrefixRecordAction(CreateInPrefixPathAction):
             ),
         )
 
+        if self.requested_spec:
+            if isinstance(self.requested_spec, tuple | list):
+                requested_specs = [str(spec) for spec in self.requested_spec]
+                requested_spec_str = str(MatchSpec.merge(self.requested_spec)[0])
+            else:
+                requested_spec_str = str(self.requested_spec)
+                requested_specs = (requested_spec_str,)
+        else:
+            requested_spec_str = None
+            requested_specs = ()
+
         self.prefix_record = PrefixRecord.from_objects(
             self.package_info.repodata_record,
             # self.package_info.index_json_record,
             self.package_info.package_metadata,
-            requested_spec=str(self.requested_spec),
+            requested_spec=requested_spec_str,
+            requested_specs=requested_specs,
             paths_data=paths_data,
             files=files,
             link=link,
@@ -1151,7 +1161,7 @@ class RegisterEnvironmentLocationAction(PathAction):
 # ######################################################
 
 
-class RemoveFromPrefixPathAction(PrefixPathAction, metaclass=ABCMeta):
+class RemoveFromPrefixPathAction(PrefixPathAction):
     def __init__(
         self, transaction_context, linked_package_data, target_prefix, target_short_path
     ):

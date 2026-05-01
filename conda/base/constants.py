@@ -107,6 +107,15 @@ PLATFORMS: Final = (
 KNOWN_SUBDIRS: Final = ("noarch", *PLATFORMS)
 PLATFORM_DIRECTORIES = KNOWN_SUBDIRS
 
+# Windows subdir -> path under CONDA_PACKAGE_ROOT to the entry point stub exe.
+# Future source of truth: https://github.com/conda/conda-launchers
+WINDOWS_LAUNCHER_STUB_PATH: Final = {
+    "win-32": "shell/cli-32.exe",
+    "win-64": "shell/cli-64.exe",
+    "win-arm64": "shell/cli-64.exe",  # rely on arm64 emulation for now
+    # "win-arm64": "shell/cli-arm64.exe",  # add native arm64 support when available
+}
+
 RECOGNIZED_URL_SCHEMES: Final = ("http", "https", "ftp", "s3", "file")
 
 
@@ -225,6 +234,10 @@ NOTICES_DECORATOR_DISPLAY_INTERVAL: Final = 86400  # in seconds
 DRY_RUN_PREFIX: Final = "Dry run action:"
 PREFIX_NAME_DISALLOWED_CHARS: Final = {"/", " ", ":", "#"}
 
+# Characters that are problematic specifically on Windows CMD.EXE
+# These are candidates for future restriction on Windows (issue #12558)
+WINDOWS_PROBLEMATIC_CHARS: Final = ("!", "^", "%", "=", "(", ")")
+
 
 class SafetyChecks(Enum):
     disabled = "disabled"
@@ -340,6 +353,7 @@ CONDA_LIST_FIELDS: Final = {
     "noarch": "Noarch",
     "package_type": "Package type",
     "requested_spec": "Requested",
+    "requested_specs": "Requested",
     "sha256": "SHA256",
     "size": "Size",
     "subdir": "Subdir",
